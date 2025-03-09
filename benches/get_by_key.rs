@@ -41,7 +41,7 @@ fn type_name_helper<T>(_t: &T) -> &'static str {
 macro_rules! bench_for_size {
     ($c:expr, $group:expr, $size:literal, $key_gen:expr) => {{
         const SIZE: usize = $size;
-        let (keys, non_keys, hash_map, btree_map) = setup_maps::<_, _, SIZE>($key_gen);
+        let (keys, non_keys, hash_map, _btree_map) = setup_maps::<_, _, SIZE>($key_gen);
         let keys_slice: & [ _ ] = keys.as_slice();
         let non_keys_slice: & [ _ ] = non_keys.as_slice();
         let keys_slice: &[ _ ] = keys_slice;
@@ -59,7 +59,7 @@ macro_rules! bench_for_size {
                 }
             })
         });
-
+        /* 
         $group.bench_function(format!("btree_map_get_{}_{}", SIZE, type_name), |b| {
             b.iter(|| {
                 for k in keys_slice {
@@ -70,6 +70,7 @@ macro_rules! bench_for_size {
                 }
             })
         });
+        */
     }};
 }
 
