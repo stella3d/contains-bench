@@ -30,7 +30,7 @@ macro_rules! bench_for_size {
     ($c:expr, $group:expr, $size:literal) => {
         {
             const SIZE: usize = $size;
-            let (mut keys, hash_map, btree_map, small_map, pico_map) = setup_maps::<SIZE>();
+            let (mut keys, hash_map, btree_map, small_map, _pico_map) = setup_maps::<SIZE>();
             let keys_slice: &mut [u64] = keys.as_mut_slice();
             keys_slice.sort_by(|a, b| a.cmp(b).reverse());
             let keys_slice: &[u64] = keys_slice;
@@ -67,7 +67,7 @@ macro_rules! bench_for_size {
                     }
                 })
             });
-
+/* 
             $group.bench_function(format!("pico_sorted_map_get_{}", SIZE), |b| {
                 b.iter(|| {
                     for k in keys_slice {
@@ -78,6 +78,7 @@ macro_rules! bench_for_size {
                     }
                 })
             });
+*/
         }
     };
 }
