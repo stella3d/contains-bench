@@ -92,15 +92,15 @@ fn bench_get_by_key_parameterized(c: &mut Criterion) {
     // Call the macro for each size you want to benchmark
     bench_for_size!(c, group, 4);
     bench_for_size!(c, group, 8);
-    bench_for_size!(c, group, 12);
+    //bench_for_size!(c, group, 12);
     bench_for_size!(c, group, 16);
-    bench_for_size!(c, group, 24);
+    //bench_for_size!(c, group, 24);
     bench_for_size!(c, group, 32);
-    bench_for_size!(c, group, 48);
+    //bench_for_size!(c, group, 48);
     bench_for_size!(c, group, 64);
-    bench_for_size!(c, group, 92);
+    //bench_for_size!(c, group, 92);
     bench_for_size!(c, group, 128);
-    bench_for_size!(c, group, 192);
+    //bench_for_size!(c, group, 192);
     bench_for_size!(c, group, 256);
 
     group.finish();
