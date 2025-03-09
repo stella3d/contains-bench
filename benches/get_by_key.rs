@@ -1,107 +1,91 @@
 use std::collections::{BTreeMap, HashMap};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use contains_bench::map::{PicoSortedMap, SmallSortedMap}; 
 
-fn setup_maps<const N: usize>() -> (Vec<u64>, HashMap<u64, usize>, BTreeMap<u64, usize>, SmallSortedMap<u64, usize>, PicoSortedMap<u64, usize, N>) {
-    let mut hash_map: HashMap<u64, _> = HashMap::with_capacity(N);
-    let mut btree_map: BTreeMap<u64, _> = BTreeMap::new();
+// Modified setup_maps to be generic over key type K and a key generator closure.
+fn setup_maps<K, F, const N: usize>(key_gen: F) -> (Vec<K>, Vec<K>, HashMap<K, usize>, BTreeMap<K, usize>)
+where 
+    F: Fn(u64) -> K, 
+    K: Ord + Clone + Eq + std::hash::Hash
+{
+    let mut hash_map: HashMap<K, _> = HashMap::with_capacity(N);
+    let mut btree_map: BTreeMap<K, _> = BTreeMap::new();
 
     let mut keys = Vec::with_capacity(N);
     let mut values = Vec::with_capacity(N);
     for i in 0..(N as u64) {
-        let k = 4096 - (i * 2);
+        let computed = 4096 - (i * 2);
+        let k = key_gen(computed);
         let v = (i * 2 - 1) as usize;
-        keys.push(k);
+        keys.push(k.clone());
         values.push(v);
-
-        hash_map.insert(k, v);
+        hash_map.insert(k.clone(), v);
         btree_map.insert(k, v);
     }
 
-    let small_map = SmallSortedMap::from_vecs(keys.clone(), values.clone());
-    let pico_map = PicoSortedMap::from_vecs(keys.clone(), values.clone());
+    const MAX: u64 = 128;
+    const MAX_PLUS32: u64 = MAX + 32;
 
-    (keys, hash_map, btree_map, small_map, pico_map)
+    let non_present_keys = (MAX..MAX_PLUS32)
+        .map(key_gen)
+        .collect::<Vec<K>>();
+
+    // reverse the order we request the keys in later
+    keys.sort_by(|a, b| a.cmp(b).reverse());
+
+    (keys, non_present_keys, hash_map, btree_map)
 }
 
-
-// Define a macro to handle each size
+// Modified bench_for_size macro to accept an extra key generator parameter.
 macro_rules! bench_for_size {
-    ($c:expr, $group:expr, $size:literal) => {
-        {
-            const SIZE: usize = $size;
-            let (mut keys, hash_map, btree_map, small_map, _pico_map) = setup_maps::<SIZE>();
-            let keys_slice: &mut [u64] = keys.as_mut_slice();
-            keys_slice.sort_by(|a, b| a.cmp(b).reverse());
-            let keys_slice: &[u64] = keys_slice;
+    ($c:expr, $group:expr, $size:literal, $key_gen:expr) => {{
+        const SIZE: usize = $size;
+        let (keys, non_keys, hash_map, btree_map) = setup_maps::<_, _, SIZE>($key_gen);
+        let keys_slice: & [ _ ] = keys.as_slice();
+        let non_keys_slice: & [ _ ] = non_keys.as_slice();
+        let keys_slice: &[ _ ] = keys_slice;
 
-            $group.bench_function(format!("hash_map_get_{}", SIZE), |b| {
-                b.iter(|| {
-                    for k in keys_slice {
-                        black_box(hash_map.get(k));
-                    }
-                    for k in MAX..MAX_PLUS32 {
-                        black_box(hash_map.get(&k));
-                    }
-                })
-            });
+        $group.bench_function(format!("hash_map_get_{}", SIZE), |b| {
+            b.iter(|| {
+                for k in keys_slice {
+                    black_box(hash_map.get(k));
+                }
+                for k in non_keys_slice {
+                    black_box(hash_map.get(k));
+                }
+            })
+        });
 
-            $group.bench_function(format!("btree_map_get_{}", SIZE), |b| {
-                b.iter(|| {
-                    for k in keys_slice {
-                        black_box(btree_map.get(k));
-                    }
-                    for k in MAX..MAX_PLUS32 {
-                        black_box(btree_map.get(&k));
-                    }
-                })
-            });
-
-            $group.bench_function(format!("small_sorted_map_get_{}", SIZE), |b| {
-                b.iter(|| {
-                    for k in keys_slice {
-                        black_box(small_map.get(k));
-                    }
-                    for k in MAX..MAX_PLUS32 {
-                        black_box(small_map.get(&k));
-                    }
-                })
-            });
-/* 
-            $group.bench_function(format!("pico_sorted_map_get_{}", SIZE), |b| {
-                b.iter(|| {
-                    for k in keys_slice {
-                        black_box(pico_map.get(k));
-                    }
-                    for k in MAX..MAX_PLUS32 {
-                        black_box(pico_map.get(&k));
-                    }
-                })
-            });
-*/
-        }
-    };
+        $group.bench_function(format!("btree_map_get_{}", SIZE), |b| {
+            b.iter(|| {
+                for k in keys_slice {
+                    black_box(btree_map.get(k));
+                }
+                for k in non_keys_slice {
+                    black_box(btree_map.get(k));
+                }
+            })
+        });
+    }};
 }
 
 fn bench_get_by_key_parameterized(c: &mut Criterion) {
-    const MAX: u64 = 256;
-    const MAX_PLUS32: u64 = MAX + 32;
-
     let mut group = c.benchmark_group("get_by_key_by_size");
     
-    // Call the macro for each size you want to benchmark
-    bench_for_size!(c, group, 4);
-    bench_for_size!(c, group, 8);
-    //bench_for_size!(c, group, 12);
-    bench_for_size!(c, group, 16);
-    //bench_for_size!(c, group, 24);
-    bench_for_size!(c, group, 32);
-    //bench_for_size!(c, group, 48);
-    bench_for_size!(c, group, 64);
-    //bench_for_size!(c, group, 92);
-    bench_for_size!(c, group, 128);
-    //bench_for_size!(c, group, 192);
-    bench_for_size!(c, group, 256);
+    // test with u64 keys at first
+    //bench_for_size!(c, group, 4, |x| x);
+    bench_for_size!(c, group, 8, |x| x);
+    bench_for_size!(c, group, 16, |x| x);
+    bench_for_size!(c, group, 32, |x| x);
+    bench_for_size!(c, group, 64, |x| x);
+    bench_for_size!(c, group, 128, |x| x);
+
+    // for &str keys, use a closure that leaks the String to obtain a &'static str.
+    //bench_for_size!(c, group, 4, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    bench_for_size!(c, group, 8, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    bench_for_size!(c, group, 16, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    bench_for_size!(c, group, 32, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    bench_for_size!(c, group, 64, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    bench_for_size!(c, group, 128, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
 
     group.finish();
 }
