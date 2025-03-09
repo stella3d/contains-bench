@@ -35,6 +35,10 @@ where
     (keys, non_present_keys, hash_map, btree_map)
 }
 
+fn type_name_helper<T>(_t: &T) -> &'static str {
+    std::any::type_name::<T>()
+}
+
 // Modified bench_for_size macro to accept an extra key generator parameter.
 macro_rules! bench_for_size {
     ($c:expr, $group:expr, $size:literal, $key_gen:expr) => {{
@@ -44,7 +48,10 @@ macro_rules! bench_for_size {
         let non_keys_slice: & [ _ ] = non_keys.as_slice();
         let keys_slice: &[ _ ] = keys_slice;
 
-        $group.bench_function(format!("hash_map_get_{}", SIZE), |b| {
+        // so we can guarantee unique type names for the benchmarks
+        let type_name = type_name_helper(keys_slice.first().unwrap());
+
+        $group.bench_function(format!("hash_map_get_{}_{}", SIZE, type_name), |b| {
             b.iter(|| {
                 for k in keys_slice {
                     black_box(hash_map.get(k));
@@ -55,7 +62,7 @@ macro_rules! bench_for_size {
             })
         });
 
-        $group.bench_function(format!("btree_map_get_{}", SIZE), |b| {
+        $group.bench_function(format!("btree_map_get_{}_{}", SIZE, type_name), |b| {
             b.iter(|| {
                 for k in keys_slice {
                     black_box(btree_map.get(k));
@@ -77,7 +84,7 @@ fn bench_get_by_key_parameterized(c: &mut Criterion) {
     bench_for_size!(c, group, 16, |x| x);
     bench_for_size!(c, group, 32, |x| x);
     bench_for_size!(c, group, 64, |x| x);
-    bench_for_size!(c, group, 128, |x| x);
+    //bench_for_size!(c, group, 128, |x| x);
 
     // for &str keys, use a closure that leaks the String to obtain a &'static str.
     //bench_for_size!(c, group, 4, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
@@ -85,7 +92,7 @@ fn bench_get_by_key_parameterized(c: &mut Criterion) {
     bench_for_size!(c, group, 16, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
     bench_for_size!(c, group, 32, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
     bench_for_size!(c, group, 64, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
-    bench_for_size!(c, group, 128, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    //bench_for_size!(c, group, 128, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
 
     group.finish();
 }
