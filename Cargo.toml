@@ -15,7 +15,7 @@ smallvec = { version = "1.14.0", features = ["const_generics", "const_new"] }
 criterion = "0.5.1"
 
 [[bench]]
-name = "get_by_key"
+name = "hash_map"
 harness = false
 
 

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 // Modified setup_maps to be generic over key type K and a key generator closure.
@@ -52,6 +52,17 @@ macro_rules! bench_for_size {
                 }
                 for k in non_keys_slice {
                     black_box(hash_map.get(k));
+                }
+            })
+        });
+
+        $group.bench_function(format!("hash_map_contains_{}_{}", SIZE, type_name), |b| {
+            b.iter(|| {
+                for k in keys_slice {
+                    black_box(hash_map.contains_key(k));
+                }
+                for k in non_keys_slice {
+                    black_box(hash_map.contains_key(k));
                 }
             })
         });
