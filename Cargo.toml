@@ -1,0 +1,32 @@
+[package]
+name = "contains-bench"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "contains_bench"
+path = "src/lib.rs"
+
+[dependencies]
+criterion = "0.5.1"
+smallvec = { version = "1.14.0", features = ["const_generics", "const_new"] }
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "get_by_key"
+harness = false
+
+
+
+[profile.release-lto]
+inherits = "release"
+codegen-units = 1
+lto = "thin"
+
+
+[profile.release-fat]
+inherits = "release"
+codegen-units = 1
+lto = "fat"
