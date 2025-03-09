@@ -22,10 +22,8 @@ where
         btree_map.insert(k, v);
     }
 
-    const MAX: u64 = 128;
-    const MAX_PLUS32: u64 = MAX + 32;
-
-    let non_present_keys = (MAX..MAX_PLUS32)
+    // make sure the number of non-present keys we request is equal to present ones
+    let non_present_keys = ((N as u64)..(N as u64 * 2))
         .map(key_gen)
         .collect::<Vec<K>>();
 
