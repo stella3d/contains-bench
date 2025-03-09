@@ -76,21 +76,23 @@ macro_rules! bench_for_size {
 fn bench_get_by_key_parameterized(c: &mut Criterion) {
     let mut group = c.benchmark_group("get_by_key_by_size");
     
-    // test with u64 keys at first
-    //bench_for_size!(c, group, 4, |x| x);
-    bench_for_size!(c, group, 8, |x| x);
-    bench_for_size!(c, group, 16, |x| x);
-    bench_for_size!(c, group, 32, |x| x);
-    bench_for_size!(c, group, 64, |x| x);
-    //bench_for_size!(c, group, 128, |x| x);
+    // String key benches
+    bench_for_size!(c, group, 8, |x| x.to_string());
+    bench_for_size!(c, group, 16, |x| x.to_string());
+    bench_for_size!(c, group, 32, |x| x.to_string());
+    bench_for_size!(c, group, 64, |x| x.to_string());
 
-    // for &str keys, use a closure that leaks the String to obtain a &'static str.
-    //bench_for_size!(c, group, 4, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+    // &str key benches
     bench_for_size!(c, group, 8, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
     bench_for_size!(c, group, 16, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
     bench_for_size!(c, group, 32, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
     bench_for_size!(c, group, 64, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
-    //bench_for_size!(c, group, 128, |x| { let s = Box::leak(x.to_string().into_boxed_str()); &*s });
+
+    // u64 key benches
+    bench_for_size!(c, group, 8, |x| x);
+    bench_for_size!(c, group, 16, |x| x);
+    bench_for_size!(c, group, 32, |x| x);
+    bench_for_size!(c, group, 64, |x| x);
 
     group.finish();
 }
